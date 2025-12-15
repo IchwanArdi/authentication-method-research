@@ -26,22 +26,13 @@ connectDB().catch((err) => {
   process.exit(1);
 });
 
-// Middleware
-app.use(express.json());
-
-// Security headers
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-  })
-);
-
-// Compression
-app.use(compression());
-
-// CORS with env override (support comma-separated list)
+// CORS must be configured first to handle preflight requests
 const rawCorsOrigin = process.env.CORS_ORIGIN;
-const defaultOrigins = ['http://localhost:5173', 'https://lab-bpi.vercel.app'];
+const defaultOrigins = [
+  'http://localhost:5173',
+  'https://lab-bpi.vercel.app',
+  'https://auth-methods.vercel.app'
+];
 const allowedOrigins = Array.isArray(rawCorsOrigin)
   ? rawCorsOrigin
   : typeof rawCorsOrigin === 'string'
@@ -56,14 +47,31 @@ const corsOptions = {
     // Allow non-browser requests or same-origin (no origin header)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    // Log for debugging
+    console.warn(`CORS blocked origin: ${origin}. Allowed origins:`, allowedOrigins);
     return callback(new Error(`CORS not allowed for origin: ${origin}`));
   },
   credentials: true,
   optionsSuccessStatus: 200,
   maxAge: 86400,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 };
 
 app.use(cors(corsOptions));
+
+// Middleware
+app.use(express.json());
+
+// Security headers
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
+// Compression
+app.use(compression());
 
 // Logging (skip in test)
 if (process.env.NODE_ENV !== 'test') {
@@ -91,14 +99,30 @@ app.use(
   })
 );
 
-// Routes
+// Health check route
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'WebAuthn Passwordless Demo API',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Routes - support both /api/* and /* for backward compatibility
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes); // Alias for client compatibility
 app.use('/api/user', userRoutes);
+app.use('/user', userRoutes); // Alias for client compatibility
 app.use('/api/stats', statsRoutes);
+app.use('/stats', statsRoutes); // Alias for client compatibility
 app.use('/api/security', securityRoutes);
+app.use('/security', securityRoutes); // Alias for client compatibility
 app.use('/api/ux', uxRoutes);
+app.use('/ux', uxRoutes); // Alias for client compatibility
 app.use('/api/cost', costRoutes);
+app.use('/cost', costRoutes); // Alias for client compatibility
 app.use('/api/compatibility', compatibilityRoutes);
+app.use('/compatibility', compatibilityRoutes); // Alias for client compatibility
 
 // Export app for use in server.js
 export default app;
