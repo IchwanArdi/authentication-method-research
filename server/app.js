@@ -27,12 +27,8 @@ connectDB().catch((err) => {
 });
 
 // CORS must be configured first to handle preflight requests
-const rawCorsOrigin = process.env.CORS_ORIGIN;
-const defaultOrigins = [
-  'http://localhost:5173',
-  'https://lab-bpi.vercel.app',
-  'https://auth-methods.vercel.app'
-];
+const rawCorsOrigin = process.env.RP_ORIGIN;
+const defaultOrigins = ['http://localhost:5173', 'https://auth-methods.vercel.app'];
 const allowedOrigins = Array.isArray(rawCorsOrigin)
   ? rawCorsOrigin
   : typeof rawCorsOrigin === 'string'
@@ -101,10 +97,10 @@ app.use(
 
 // Health check route
 app.get('/', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     message: 'WebAuthn Passwordless Demo API',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
